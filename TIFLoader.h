@@ -7,37 +7,39 @@
 #ifndef Class_TIFLoader_Header
 #define Class_TIFLoader_Header
 
-struct IFDentry {
-	//データの識別コード
-	unsigned short tag = 0;
-	//データの型※下記参照, コード1～コード12
-	unsigned short dataType = 0;
-	//データフィールドに含まれる値の数(配列数)
-	unsigned int countField = 0;
-	//各種データまたはバイト単位のオフセット値
-	//4byte以内なら一つの数値そのもの, 以上なら配列の先頭アドレス
-	unsigned int dataFieldOrPointer = 0;
-};
-
-struct IFD {
-	unsigned short entryCount = 0;//IFDエントリ数
-	IFDentry* entry = nullptr;    //entryCount個生成
-	unsigned int IFDpointer = 0;//次のIFDへのポインタ, 無い場合0
-
-	~IFD() {
-		if (entry) {
-			delete[] entry;
-			entry = nullptr;
-		}
-	}
-};
+#include <memory>
 
 class TIFLoader {
 
 private:
+	struct IFDentry {
+		//データの識別コード
+		unsigned short tag = 0;
+		//データの型※下記参照, コード1～コード12
+		unsigned short dataType = 0;
+		//データフィールドに含まれる値の数(配列数)
+		unsigned int countField = 0;
+		//各種データまたはバイト単位のオフセット値
+		//4byte以内なら一つの数値そのもの, 以上なら配列の先頭アドレス
+		unsigned int dataFieldOrPointer = 0;
+	};
+
+	struct IFD {
+		unsigned short entryCount = 0;//IFDエントリ数
+		IFDentry* entry = nullptr;    //entryCount個生成
+		unsigned int IFDpointer = 0;//次のIFDへのポインタ, 無い場合0
+
+		~IFD() {
+			if (entry) {
+				delete[] entry;
+				entry = nullptr;
+			}
+		}
+	};
+
 	unsigned int unResizeImageSizeX = 0;
 	unsigned int unResizeImageSizeY = 0;
-	IFD ifd;
+	std::unique_ptr<IFD> ifd = {};
 
 	bool bigEndian = false;//true:順方向
 	unsigned int convertUCHARtoUINT(unsigned char* byte);

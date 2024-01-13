@@ -9,33 +9,35 @@
 #include <stdio.h>
 #include <memory>
 
-typedef const unsigned short tag;
-static tag ImageWidth = 256;
-static tag ImageLength = 257;
-static tag BitsPerSample = 258;
-static tag Compression = 259;
-static tag PhotometricInterpretation = 262;
-static tag StripOffsets = 273;
-static tag RowsPerStrip = 278;
-static tag StripByteCounts = 279;
-static tag XResolusion = 282;
-static tag YResolusion = 283;
-static tag ResolutionUnit = 296;
-static tag ColorMap = 320;
+namespace {
+	typedef const unsigned short tag;
+	tag ImageWidth = 256;
+	tag ImageLength = 257;
+	tag BitsPerSample = 258;
+	tag Compression = 259;
+	tag PhotometricInterpretation = 262;
+	tag StripOffsets = 273;
+	tag RowsPerStrip = 278;
+	tag StripByteCounts = 279;
+	tag XResolusion = 282;
+	tag YResolusion = 283;
+	tag ResolutionUnit = 296;
+	tag ColorMap = 320;
 
-typedef const unsigned short dtype;
-static dtype Byte = 1;
-static dtype ASCII = 2;
-static dtype Short = 3;
-static dtype Long = 4;
-static dtype RATIONAL = 5;
-static dtype SBYTE = 6;
-static dtype UNDEFINED = 7;
-static dtype SSHORT = 8;
-static dtype SLONG = 9;
-static dtype SRATIONAL = 10;
-static dtype Float = 11;
-static dtype Double = 12;
+	typedef const unsigned short dtype;
+	dtype Byte = 1;
+	dtype ASCII = 2;
+	dtype Short = 3;
+	dtype Long = 4;
+	dtype RATIONAL = 5;
+	dtype SBYTE = 6;
+	dtype UNDEFINED = 7;
+	dtype SSHORT = 8;
+	dtype SLONG = 9;
+	dtype SRATIONAL = 10;
+	dtype Float = 11;
+	dtype Double = 12;
+}
 
 unsigned int TIFLoader::convertUCHARtoUINT(unsigned char* byte) {
 	int ind[4] = { 0,1,2,3 };
@@ -109,6 +111,8 @@ unsigned char* TIFLoader::loadTIFInByteArray(unsigned char* byte, unsigned int b
 
 	unsigned int IFDpointer = convertUCHARtoUINT(&byte[4]);
 
+	ifd = std::make_unique<IFD>();
+
 	createImageFileDirectory(&byte[IFDpointer]);
 
 	unsigned char* data = nullptr;//一時変数
@@ -137,8 +141,8 @@ unsigned char* TIFLoader::loadTIFInByteArray(unsigned char* byte, unsigned int b
 	long numcolorMap = 0;
 	std::unique_ptr<unsigned short[]> colorMap = nullptr;//カラーマップ
 
-	for (int i = 0; i < ifd.entryCount; i++) {
-		IFDentry& e = ifd.entry[i];
+	for (int i = 0; i < ifd.get()->entryCount; i++) {
+		IFDentry& e = ifd.get()->entry[i];
 		switch (e.tag) {
 		case ImageWidth:
 			if (e.dataType == Short)
@@ -272,17 +276,17 @@ unsigned char* TIFLoader::loadTIFInByteArray(unsigned char* byte, unsigned int b
 }
 
 void TIFLoader::createImageFileDirectory(unsigned char* byte) {
-	ifd.entryCount = convertUCHARtoSHORT(&byte[0]);
-	ifd.entry = new IFDentry[ifd.entryCount];
-	for (int i = 0; i < ifd.entryCount; i++) {
-		IFDentry& e = ifd.entry[i];
+	ifd.get()->entryCount = convertUCHARtoSHORT(&byte[0]);
+	ifd.get()->entry = new IFDentry[ifd.get()->entryCount];
+	for (int i = 0; i < ifd.get()->entryCount; i++) {
+		IFDentry& e = ifd.get()->entry[i];
 		unsigned char* entry = &byte[2] + sizeof(IFDentry) * i;
 		e.tag = convertUCHARtoSHORT(entry);
 		e.dataType = convertUCHARtoSHORT(&entry[2]);
 		e.countField = convertUCHARtoUINT(&entry[4]);
 		e.dataFieldOrPointer = convertUCHARtoUINT(&entry[8]);
 	}
-	ifd.IFDpointer = convertUCHARtoUINT(&byte[2] + sizeof(IFDentry) * ifd.entryCount);
+	ifd.get()->IFDpointer = convertUCHARtoUINT(&byte[2] + sizeof(IFDentry) * ifd.get()->entryCount);
 }
 
 void TIFLoader::resize(unsigned char* dstImage, unsigned char* srcImage,
